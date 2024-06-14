@@ -1,0 +1,30 @@
+const mongoose = require('mongoose');
+
+const bookingSchema = new mongoose.Schema(
+  {
+    tour: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Tour',
+      require: [true, 'Booking must belong to a Tour!'],
+    },
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      require: [true, 'Booking must belong to a User!'],
+    },
+    price: {
+      type: Number,
+      require: [true, 'Booking must have a price'],
+    },
+    paid: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const Booking = mongoose.model('Booking', bookingSchema);
+module.exports = Booking;
