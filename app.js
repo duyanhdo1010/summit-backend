@@ -1,10 +1,10 @@
 const express = require('express');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-const tourRouter = require('./routes/tourRouter');
-const userRouter = require('./routes/userRouter');
-const reviewRouter = require('./routes/reviewRouter');
-const bookingRouter = require('./routes/bookingRouter');
+const tourRouter = require('./routes/tourRoutes');
+const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 
 // file app chịu trách nghiệm khởi tạo và cấu hình ứng dụng express
 const app = express();

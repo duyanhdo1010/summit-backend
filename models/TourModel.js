@@ -36,10 +36,13 @@ const TourSchema = new mongoose.Schema(
       require: [true, 'A tour must have a group size'],
     },
     discount: { type: Number, default: 0 },
-    location: { type: String, require: [true, 'A tour must have a location'] },
+    locations: {
+      type: [String],
+      require: [true, 'A tour must have a location'],
+    },
   },
   {
-    timestamp: true,
+    timestamps: true,
   }
 );
 
