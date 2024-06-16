@@ -21,7 +21,28 @@ exports.createTour = async (req, res) => {
 
 exports.getAllTours = async (req, res) => {
   try {
-    const tours = await Tour.find();
+    // Cách 1: const tours = await Tour.find().where('duration').equals(5).where('discount').equals(0)
+
+    // Cách 2
+    console.log(req.query);
+    // BUILD QUERY
+    // 1) Filtering
+    const queryObj = { ...req.query }; //tạo 1 bản copy của req.query để lọc đầu vào
+    const excludedFields = ['page', 'sort', 'limit', 'fields']; //lọc các trường mà không ném vào filter
+    excludedFields.forEach((el) => delete queryObj[el]); //xoá các phần tử của query tồn tại trong excludedFields
+    // 2) Advanced filtering
+    //  { duration: { gte: '5' } } ==> { duration: { $gte: '5' } }
+    // gte, gt, lte, lt (các toán tử)
+    let queryStr = JSON.stringify(queryObj);
+    // tìm kiếm toán tử tương ứng (\b: chỉ tìm kiếm các từ trùng (bgte sẽ không được), g: tìm kiếm toàn bộ chuỗi khớp)
+    // VD: gte ==> $gte
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    const query = Tour.find(JSON.parse(queryStr));
+
+    // EXECUTE QUERY
+    const tours = await query;
+
+    // SEND RESPONSE
     res.status(200).json({
       status: 'success',
       results: tours.length,
