@@ -1,6 +1,7 @@
 const User = require('../models/userModel');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const sendEmail = require('../utils/email');
+const crypto = require('crypto');
 
 exports.signup = async (req, res) => {
   try {
@@ -92,6 +93,109 @@ exports.protect = async (req, res, next) => {
 
     // Grant access to protected route
     next();
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: err.message,
+    });
+  }
+};
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    try {
+      // authController.restrictTo('admin')
+      // roles có thể là 1 array: ['admin', 'random-role']
+      //người dùng đã được đưa vào đây khi đi qua protect
+      if (!roles.includes(req.user.role))
+        throw new Error('You do not have permission to perform this action');
+
+      next();
+    } catch (err) {
+      res.status(400).json({
+        status: 'failed',
+        message: err.message,
+      });
+    }
+  };
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    // 1) Get user from posted email
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) throw new Error('There is no user with that email address!');
+    // 2) Generate random reset password token
+    const resetToken = user.createPasswordResetToken();
+    // để lưu cái token được tạo và thời gian token hết hạn
+    await user.save({ validateBeforeSave: false }); //do kiểu save phải có tất cả các trường require -> phải tắt
+    // 3) Send it to user's email
+    const resetURL = `${req.protocol}://${req.get(
+      'host'
+    )}/api/v1/users/resetPassword/${resetToken}`;
+
+    const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to ${resetURL}.\n 
+    If you didn't forget your password, please forget this email
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Your password reset token (valid for 10 mins)',
+        message,
+      });
+    } catch (err) {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+      throw new Error('There was an error sending the email. Try again later!');
+    }
+    res.status(200).json({
+      status: 'success',
+      message: 'Token sent to email',
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: err.message,
+    });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    // 1) Get User from forgot password token
+
+    // mã hoá y hệt như token trong schema
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      // Nếu thời gian hết hạn lớn hơn thời gian hiện tại thì lấy
+      passwordResetExpires: { $gt: Date.now() },
+    });
+
+    // 2) Set new password if token chưa hết hạn, và user có tồn lại
+    if (!user) throw new Error('Token is invalid or has expired ');
+
+    // Cập nhật thông tin user
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    // 3) Log the user in, send JWT
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN,
+    });
+
+    res.status(200).json({
+      status: 'success',
+      token,
+    });
   } catch (err) {
     res.status(400).json({
       status: 'failed',

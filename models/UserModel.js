@@ -1,5 +1,6 @@
 const { mongoose } = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -39,10 +40,13 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    admin: {
-      type: Boolean,
-      default: false,
+    role: {
+      type: String,
+      enum: ['admin', 'user'],
+      default: 'user',
     },
+    passwordResetToken: String,
+    passwordResetExpires: Date,
   },
   {
     // tạo ra createdAt và updatedAt (có cập nhật dựa trên các thay đổi)
@@ -68,6 +72,24 @@ userSchema.methods.correctPassword = async function (
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+userSchema.methods.createPasswordResetToken = function () {
+  // tạo ra token ngẫu nhiên rồi mã hoá
+  // độ dài 32 byte --> chuyển thành chuỗi hex (0-9A-F)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // tạo ra chuỗi hash từ chuỗi ngẫu nhiên -> tạo giá trị hash dưới chuỗi hex(0-9A-F)
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // thời gian sử dụng link reset là 10p tính từ dùng chức năng reset password
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  // trả lại token về để gắn vào link reset password (chưa mã hoá để còn compare với cái bị mã hoá)
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

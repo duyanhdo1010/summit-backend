@@ -8,28 +8,44 @@ router.use('/:tourId/reviews', reviewRouter);
 
 router
   .route('/top-5-tours')
-  .get(
-    authController.protect,
-    tourController.aliasTopTours,
-    tourController.getAllTours
-  );
+  .get(tourController.aliasTopTours, tourController.getAllTours);
 
 router
   .route('/tour-stats')
-  .get(authController.protect, tourController.getTourStats);
+  .get(
+    authController.protect,
+    authController.restrictTo('admin'),
+    tourController.getTourStats
+  );
 router
   .route('/monthly-plan/:year')
-  .get(authController.protect, tourController.getMonthlyPlan);
+  .get(
+    authController.protect,
+    authController.restrictTo('admin'),
+    tourController.getMonthlyPlan
+  );
 
 router
   .route('/')
   .get(tourController.getAllTours)
-  .post(authController.protect, tourController.createTour);
+  .post(
+    authController.protect,
+    authController.restrictTo('admin'),
+    tourController.createTour
+  );
 
 router
   .route('/:id')
   .get(tourController.getTour)
-  .patch(authController.protect, tourController.updateTour)
-  .delete(authController.protect, tourController.deleteTour);
+  .patch(
+    authController.protect,
+    authController.restrictTo('admin'),
+    tourController.updateTour
+  )
+  .delete(
+    authController.protect,
+    authController.restrictTo('admin'),
+    tourController.deleteTour
+  );
 
 module.exports = router;
