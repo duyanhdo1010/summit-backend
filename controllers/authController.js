@@ -18,6 +18,23 @@ exports.signup = async (req, res) => {
       expiresIn: process.env.JWT_EXPIRES_IN,
     });
 
+    const cookiesOption = {
+      // sẽ hết hạn sau 90 ngày (cái biến kia giá trị là 90)
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      // chỉ gửi trên https
+      // secure: true,
+      // làm trình duyệt không thể truy cập và sửa đồi cookie
+      // trình duyệt cũng nhận, lưu, tự động gửi cookie với request
+      httpOnly: true,
+    };
+
+    res.cookie('jwt', token, cookiesOption);
+
+    // remove password from output
+    newUser.password = undefined;
+
     res.status(201).json({
       status: 'success',
       token,
@@ -53,6 +70,20 @@ exports.login = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN,
     });
+
+    const cookiesOption = {
+      // sẽ hết hạn sau 90 ngày (cái biến kia giá trị là 90)
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      // chỉ gửi trên https
+      // secure: true,
+      // làm trình duyệt không thể truy cập và sửa đồi cookie
+      // trình duyệt cũng nhận, lưu, tự động gửi cookie với request
+      httpOnly: true,
+    };
+
+    res.cookie('jwt', token, cookiesOption);
 
     res.status(200).json({
       status: 'success',
@@ -192,6 +223,20 @@ exports.resetPassword = async (req, res) => {
       expiresIn: process.env.JWT_EXPIRES_IN,
     });
 
+    const cookiesOption = {
+      // sẽ hết hạn sau 90 ngày (cái biến kia giá trị là 90)
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      // chỉ gửi trên https
+      // secure: true,
+      // làm trình duyệt không thể truy cập và sửa đồi cookie
+      // trình duyệt cũng nhận, lưu, tự động gửi cookie với request
+      httpOnly: true,
+    };
+
+    res.cookie('jwt', token, cookiesOption);
+
     res.status(200).json({
       status: 'success',
       token,
@@ -225,6 +270,20 @@ exports.updatePassword = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN,
     });
+
+    const cookiesOption = {
+      // sẽ hết hạn sau 90 ngày (cái biến kia giá trị là 90)
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      // chỉ gửi trên https
+      // secure: true,
+      // làm trình duyệt không thể truy cập và sửa đồi cookie
+      // trình duyệt cũng nhận, lưu, tự động gửi cookie với request
+      httpOnly: true,
+    };
+
+    res.cookie('jwt', token, cookiesOption);
 
     res.status(200).json({
       status: 'success',
