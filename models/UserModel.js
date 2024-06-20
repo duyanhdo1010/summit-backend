@@ -39,6 +39,7 @@ const userSchema = new mongoose.Schema(
     active: {
       type: Boolean,
       default: true,
+      select: false,
     },
     role: {
       type: String,
@@ -63,6 +64,13 @@ userSchema.pre('save', async function (next) {
 
   // Xoá passwordConfirm
   this.passwordConfirm = undefined;
+  next();
+});
+
+// áp dụng với các query liên quan đến find
+userSchema.pre(/^find/, function (next) {
+  // this ở đây là query
+  this.find({ active: { $ne: false } });
   next();
 });
 
