@@ -111,7 +111,7 @@ exports.getTour = async (req, res) => {
   try {
     const tourId = req.params.id;
     // Tour.findOne({ _id: req.params.id })
-    const tour = await Tour.findById(tourId);
+    const tour = await Tour.findById(tourId).populate({ path: 'reviews' });
     if (!tour) {
       throw new Error('No tour found with that ID');
     }

@@ -12,6 +12,12 @@ router.patch(
   authController.updatePassword
 );
 
+router.get(
+  '/me',
+  authController.protect,
+  userController.getMe,
+  userController.getUser
+);
 router.patch('/updateMe', authController.protect, userController.updateMe);
 router.delete('/deleteMe', authController.protect, userController.deleteMe);
 
@@ -19,8 +25,9 @@ router.post('/forgotPassword', authController.forgotPassword);
 // patch vì đây là cập nhật 1 trường là mật khẩu
 router.patch('/resetPassword/:token', authController.resetPassword);
 
-router.route('/').get(userController.getAllUsers);
+router.use(authController.protect, authController.restrictTo('admin'));
 
+router.route('/').get(userController.getAllUsers);
 router
   .route('/:id')
   .get(userController.getUser)

@@ -22,6 +22,9 @@ const TourSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
       max: [5, 'Rating must be below 5.0'],
+      // hàm này chạy mỗi lần cái này có giá trị mới
+      // hàm round này kiểu 4.6666 làm tròn thành 5 -> * 10 thành 46.666 làm tròn thành 47 xong /10 là đẹp
+      set: (val) => Math.round(val * 10) / 10,
     },
     ratingQuantity: {
       type: Number,
@@ -59,8 +62,23 @@ const TourSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    // tạo trường ảo để khi nào cần (trường ảo là trường được tính từ trường khác, không lưu vào DB)
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+// Indexes (giúp tăng tốc cho việc query các trường nhưng đồng thời cũng tốn tài nguyên)
+// 1 tăng dần -1 giảm dần
+TourSchema.index({ price: 1, ratingsAverage: -1 });
+TourSchema.index({ slug: 1 });
+
+// Virtual Populate
+TourSchema.virtual('reviews', {
+  ref: 'Review', //chỉ định tên Model tham chiếu
+  foreignField: 'tour', //kiểu khoá ngoại tham chiếu đến tour (là id) trong ReviewModel
+  localField: '_id', //tham chiếu đến id của document hiện tại
+});
 
 // run before save and create
 TourSchema.pre('save', function (next) {
