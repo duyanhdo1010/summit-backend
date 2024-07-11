@@ -88,6 +88,9 @@ exports.login = async (req, res) => {
     res.status(200).json({
       status: 'success',
       token,
+      data: {
+        user,
+      },
     });
   } catch (err) {
     res.status(400).json({
@@ -95,6 +98,18 @@ exports.login = async (req, res) => {
       message: err.message,
     });
   }
+};
+
+exports.logout = async (req, res, next) => {
+  // Giải thích hàm logout
+  // Truyền 1 cookie với tên giống nhưng, thời gian hết hạn ngắn + không có token --> ghi đè
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() - 10 * 1000), // Đặt thời gian hết hạn là 10 giây trước
+    httpOnly: true,
+  });
+  res.status(200).json({
+    status: 'success',
+  });
 };
 
 // thêm next vì đây sẽ là middleware function
@@ -108,6 +123,8 @@ exports.protect = async (req, res, next) => {
       req.header('Authorization').startsWith('Bearer')
     ) {
       token = req.header('Authorization').split(' ')[1];
+    } else if (req.cookies.jwt) {
+      token = req.cookies.jwt;
     }
 
     if (!token)

@@ -2,7 +2,7 @@ const User = require('../models/userModel');
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find({ role: { $ne: 'admin' } });
     res.status(200).json({
       status: 'success',
       results: users.length,

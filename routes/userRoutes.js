@@ -11,6 +11,7 @@ router.patch(
   authController.protect,
   authController.updatePassword
 );
+router.get('/logout', authController.logout);
 
 router.get(
   '/me',
