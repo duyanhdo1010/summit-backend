@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       require: [true, 'Please provide your phone number!'],
     },
-    photo: { type: String },
+    photo: { type: String, default: 'default-avatar.png' },
     password: {
       type: String,
       require: [true, 'Please provide a password'],

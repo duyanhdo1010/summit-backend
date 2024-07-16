@@ -9,9 +9,13 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const cors = require('cors');
+const path = require('path');
 
 // file app chịu trách nghiệm khởi tạo và cấu hình ứng dụng express
 const app = express();
+
+// Serving static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // nhận các request từ bên frontend
 app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
@@ -41,10 +45,10 @@ app.use(xss()); //xoá mã html độc hại khỏi input (có thể có mã js 
 // đọc cookie từ header chuyển sang req.cookies
 app.use(cookieParser());
 
-app.use((req, res, next) => {
-  console.log('cookies: ', req.cookies);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log('cookies: ', req.cookies);
+//   next();
+// });
 
 // Routes
 app.use('/api/v1/tours', tourRouter);

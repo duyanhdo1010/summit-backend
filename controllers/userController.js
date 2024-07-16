@@ -1,4 +1,58 @@
 const User = require('../models/userModel');
+const sharp = require('sharp');
+const multer = require('multer');
+
+// const multerStorage = multer.diskStorage({
+//   // có quyền truy cập vào request, file và 1 hàm callback
+//   destination: (req, file, cb) => {
+//     // error nếu có, đích nơi lưu file
+//     cb(null, 'public/img/users');
+//   },
+//   filename: (req, file, cb) => {
+//     const ext = file.mimetype.split('/')[1]; //sẽ lấy cái (extension vd: jpg)
+
+//     // đặt tên cho nó unique (user-id-timestamp) (user-731264781-398271938.jpeg)
+//     // error nếu có, filename
+//     cb(null, `user-${req.user.id}-${Date.now()}.${ext}`);
+//   },
+// });
+
+const multerStorage = multer.memoryStorage();
+
+// kiểm tra tệp có phải hình ảnh không
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    // không lỗi thì null, trả về true nếu đúng là image
+    cb(null, true);
+  } else {
+    // trả về lỗi và false (không phải image)
+    cb(new Error('Not an image! Please upload only images.'), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+// tạo middleware ngay trong controller
+exports.uploadUserPhoto = upload.single('photo');
+
+exports.resizeUserPhoto = (req, res, next) => {
+  if (!req.file) return next;
+  // lưu vào đĩa tên cho giống cái định dạng ở trên
+  req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+
+  // nhờ việc lưu vào buffer trước ta có thế lấy cho sharp
+  // các options có thể đọc thêm trên docs
+  sharp(req.file.buffer)
+    .resize(500, 500) //resize(width, height),
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
+    .toFile(`public/img/users/${req.file.filename}`); //lưu vào disk
+
+  next();
+};
 
 exports.getAllUsers = async (req, res) => {
   try {
@@ -59,7 +113,9 @@ exports.updateMe = async (req, res) => {
       throw new Error('This routes is not for password update');
     // 2) Update user
     // Lọc body đẻ bỏ đi mấy trường mình không mong muốn bị lọc như role
-    const filteredBody = filterObj(req.body, 'name', 'email');
+    const filteredBody = filterObj(req.body, 'name', 'email', 'phone');
+    // nếu có file thì lưu tên hình ảnh vào document
+    if (req.file) filteredBody.photo = req.file.filename;
 
     // findByIdAndUpdate bởi vì nếu save thì phải vượt qua validate của mấy trường như password
     const newUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {

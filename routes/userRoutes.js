@@ -2,6 +2,8 @@ const express = require('express');
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
 
+// nơi lưu file ảnh được tải lên
+
 const router = express.Router();
 
 router.post('/signup', authController.signup);
@@ -19,7 +21,13 @@ router.get(
   userController.getMe,
   userController.getUser
 );
-router.patch('/updateMe', authController.protect, userController.updateMe);
+router.patch(
+  '/updateMe',
+  authController.protect,
+  userController.uploadUserPhoto,
+  userController.resizeUserPhoto,
+  userController.updateMe
+);
 router.delete('/deleteMe', authController.protect, userController.deleteMe);
 
 router.post('/forgotPassword', authController.forgotPassword);
