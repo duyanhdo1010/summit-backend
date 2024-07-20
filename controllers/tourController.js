@@ -1,4 +1,72 @@
 const Tour = require('../models/tourModel');
+const sharp = require('sharp');
+const multer = require('multer');
+
+const multerStorage = multer.memoryStorage();
+
+// kiểm tra tệp có phải hình ảnh không
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    // không lỗi thì null, trả về true nếu đúng là image
+    cb(null, true);
+  } else {
+    // trả về lỗi và false (không phải image)
+    cb(new Error('Not an image! Please upload only images.'), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+// upload.single('imageCover') //req.file
+// Xử lý upload nhiều ảnh
+// upload.array('images', 3) //req. files
+exports.uploadTourImages = upload.fields(
+  {
+    name: 'imageCover',
+    maxCount: 1,
+  },
+  { name: 'images', maxCount: 3 }
+);
+
+// Resize hình ảnh
+exports.resizeTourImages = async (req, res, next) => {
+  try {
+    console.log(req.files);
+    if (!req.files.imageCover || !req.files.images) return next();
+
+    // 1) imageCover
+    req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`; //dữ liệu nhận vào create và update dưới dạng req.body
+    await sharp(req.files.imageCover[0].buffer)
+      .resize(2000, 1333) //resize(width, height),
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
+      .toFile(`public/img/tours/${req.file.filename}`); //lưu vào disk
+
+    // 2) images
+    req.body.images = [];
+
+    await Promise.all(
+      req.files.images.map(async (file, i) => {
+        const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+        await sharp(file.buffer)
+          .resize(2000, 1333) //resize(width, height),
+          .toFormat('jpeg')
+          .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
+          .toFile(`public/img/tours/${filename}`); //lưu vào disk
+
+        req.body.image.push(filename);
+      })
+    );
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: err.message,
+    });
+  }
+  next();
+};
 
 exports.aliasTopTours = async (req, res, next) => {
   // đơn giản là set các cái trường này theo ý mình muốn xong vào getAll

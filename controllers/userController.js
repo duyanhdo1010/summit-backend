@@ -38,18 +38,25 @@ const upload = multer({
 // tạo middleware ngay trong controller
 exports.uploadUserPhoto = upload.single('photo');
 
-exports.resizeUserPhoto = (req, res, next) => {
-  if (!req.file) return next;
-  // lưu vào đĩa tên cho giống cái định dạng ở trên
-  req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+exports.resizeUserPhoto = async (req, res, next) => {
+  try {
+    if (!req.file) return next();
+    // lưu vào đĩa tên cho giống cái định dạng ở trên
+    req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
 
-  // nhờ việc lưu vào buffer trước ta có thế lấy cho sharp
-  // các options có thể đọc thêm trên docs
-  sharp(req.file.buffer)
-    .resize(500, 500) //resize(width, height),
-    .toFormat('jpeg')
-    .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
-    .toFile(`public/img/users/${req.file.filename}`); //lưu vào disk
+    // nhờ việc lưu vào buffer trước ta có thế lấy cho sharp
+    // các options có thể đọc thêm trên docs
+    await sharp(req.file.buffer)
+      .resize(500, 500) //resize(width, height),
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
+      .toFile(`public/img/users/${req.file.filename}`); //lưu vào disk
+  } catch (err) {
+    res.status(400).json({
+      status: 'failed',
+      message: err.message,
+    });
+  }
 
   next();
 };
