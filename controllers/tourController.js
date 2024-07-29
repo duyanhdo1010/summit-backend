@@ -22,50 +22,50 @@ const upload = multer({
 // upload.single('imageCover') //req.file
 // Xử lý upload nhiều ảnh
 // upload.array('images', 3) //req. files
-exports.uploadTourImages = upload.fields(
-  {
-    name: 'imageCover',
-    maxCount: 1,
-  },
-  { name: 'images', maxCount: 3 }
-);
+exports.uploadTourImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
 
 // Resize hình ảnh
 exports.resizeTourImages = async (req, res, next) => {
   try {
-    console.log(req.files);
     if (!req.files.imageCover || !req.files.images) return next();
 
     // 1) imageCover
-    req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`; //dữ liệu nhận vào create và update dưới dạng req.body
-    await sharp(req.files.imageCover[0].buffer)
-      .resize(2000, 1333) //resize(width, height),
-      .toFormat('jpeg')
-      .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
-      .toFile(`public/img/tours/${req.file.filename}`); //lưu vào disk
+    if (req.files.imageCover) {
+      req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`; //dữ liệu nhận vào create và update dưới dạng req.body
+      await sharp(req.files.imageCover[0].buffer)
+        .resize(2000, 1333) //resize(width, height),
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
+        .toFile(`public/img/tours/${req.body.imageCover}`); //lưu vào disk
+    }
 
     // 2) images
-    req.body.images = [];
+    if (req.files.images) {
+      req.body.images = [];
 
-    await Promise.all(
-      req.files.images.map(async (file, i) => {
-        const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
-        await sharp(file.buffer)
-          .resize(2000, 1333) //resize(width, height),
-          .toFormat('jpeg')
-          .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
-          .toFile(`public/img/tours/${filename}`); //lưu vào disk
+      await Promise.all(
+        req.files.images.map(async (file, i) => {
+          const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+          await sharp(file.buffer)
+            .resize(2000, 1333) //resize(width, height),
+            .toFormat('jpeg')
+            .jpeg({ quality: 90 }) //kiểu giúp nén nó lại xíu
+            .toFile(`public/img/tours/${filename}`); //lưu vào disk
 
-        req.body.image.push(filename);
-      })
-    );
+          req.body.images.push(filename);
+        })
+      );
+    }
+    next();
   } catch (err) {
     res.status(400).json({
       status: 'failed',
       message: err.message,
     });
   }
-  next();
 };
 
 exports.aliasTopTours = async (req, res, next) => {
@@ -78,6 +78,10 @@ exports.aliasTopTours = async (req, res, next) => {
 
 exports.createTour = async (req, res) => {
   try {
+    // khi submit về dưới dạng form data thì nó convert hết thành chuỗi
+    if (req.body.price) req.body.price = Number(req.body.price);
+    if (req.body.discount) req.body.discount = Number(req.body.discount);
+
     const newTour = await Tour.create(req.body);
     // 201: Created
     res.status(201).json({
@@ -199,6 +203,9 @@ exports.getTour = async (req, res) => {
 
 exports.updateTour = async (req, res) => {
   try {
+    // khi submit về dưới dạng form data thì nó convert hết thành chuỗi
+    if (req.body.price) req.body.price = Number(req.body.price);
+    if (req.body.discount) req.body.discount = Number(req.body.discount);
     const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
       // return updated tour
       new: true,
@@ -214,6 +221,7 @@ exports.updateTour = async (req, res) => {
       },
     });
   } catch (err) {
+    console.log('error: ', err.message);
     res.status(404).json({
       status: 'failed',
       message: err.message,
@@ -234,7 +242,7 @@ exports.deleteTour = async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: 'failed',
-      message: er.messager,
+      message: err.message,
     });
   }
 };

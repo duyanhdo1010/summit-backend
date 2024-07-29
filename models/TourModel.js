@@ -32,6 +32,7 @@ const TourSchema = new mongoose.Schema(
     },
     imageCover: {
       type: String,
+      default: 'default-tour.jpg',
       require: [true, 'A tour must have a image cover!'],
     },
     duration: {
@@ -43,16 +44,13 @@ const TourSchema = new mongoose.Schema(
       type: Number,
       require: [true, 'A tour must have a group size'],
     },
-    price: { type: Number, require: [true, 'A tour must have a price'] },
+    price: {
+      type: Number,
+      required: [true, 'A tour must have a price'],
+    },
     discount: {
       type: Number,
       default: 0,
-      validate: {
-        validator: function (val) {
-          return val < this.price; // (điều kiện)
-        },
-        message: 'Discount ({VALUE}) should be below regular price', // nếu điều kiện sai
-      },
     },
     locations: {
       type: [String],
@@ -83,6 +81,21 @@ TourSchema.virtual('reviews', {
 // run before save and create
 TourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true }); //tạo 1 trường slug
+  next();
+});
+
+TourSchema.pre('save', function (next) {
+  if (this.discount >= this.price) {
+    return next(new Error('Discount should be below regular price'));
+  }
+  next();
+});
+
+TourSchema.pre('findOneAndUpdate', function (next) {
+  const update = this.getUpdate();
+  if (update.discount >= update.price) {
+    return next(new Error('Discount should be below regular price'));
+  }
   next();
 });
 
